@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     uvc_stream_ctrl_t ctrl;
     uvc_device_handle_t *devh;
 
-    bw = blobwatch_new(1280, 960);
+    bw = blobwatch_new(WIDTH, HEIGHT);
 
     SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -88,13 +88,13 @@ int main(int argc, char** argv)
     ASSERT_MSG(res >= 0, "could not open the camera\n");
 
     SDL_Window* window = SDL_CreateWindow("Playground", SDL_WINDOWPOS_UNDEFINED,
-                                          SDL_WINDOWPOS_UNDEFINED, 1280, 720, 0);
+            SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, 0);
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1,
-                                                SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+            SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     res = uvc_get_stream_ctrl_format_size(devh, &ctrl, UVC_FRAME_FORMAT_ANY,
-                                          WIDTH / 2, HEIGHT, FPS);
+            WIDTH / 2, HEIGHT, FPS);
     ASSERT_MSG(res >= 0, "could not get format size\n");
 
     uvc_print_diag(devh, stderr);
