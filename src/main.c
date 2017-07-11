@@ -19,44 +19,44 @@
 /* change this to the Rift HMD's radio id */
 #define RIFT_RADIO_ID 0x12345678
 
-int esp770u_read_reg2(libusb_device_handle *dev, uint8_t reg, uint16_t *val);
+#define CONTROL_IFACE   0
 
-int uvc_set_cur(libusb_device_handle *dev, uint8_t interface, uint8_t entity,
-		uint8_t selector, unsigned char *data, uint16_t wLength)
+static int uvc_set_cur(libusb_device_handle *dev, uint8_t entity,
+		       uint8_t selector, unsigned char *data, uint16_t wLength)
 {
 	uint8_t bmRequestType = LIBUSB_REQUEST_TYPE_CLASS |
 		LIBUSB_RECIPIENT_INTERFACE;
 	uint8_t bRequest = SET_CUR;
 	uint16_t wValue = selector << 8;
-	uint16_t wIndex = entity << 8 | interface;
+	uint16_t wIndex = entity << 8 | CONTROL_IFACE;
 	unsigned int timeout = TIMEOUT;
 	int ret;
 
 	ret = libusb_control_transfer(dev, bmRequestType, bRequest, wValue,
 			wIndex, data, wLength, timeout);
 	if (ret < 0) {
-		fprintf(stderr, "failed to transfer SET CUR %u %u %u: %d %d %m\n",
-				interface, entity, selector, ret, errno);
+		fprintf(stderr, "failed to transfer SET CUR %u %u: %d %d %m\n",
+			entity, selector, ret, errno);
 	}
 	return ret;
 }
 
-int uvc_get_cur(libusb_device_handle *dev, uint8_t interface, uint8_t entity,
-		uint8_t selector, unsigned char *data, uint16_t wLength)
+static int uvc_get_cur(libusb_device_handle *dev, uint8_t entity,
+		       uint8_t selector, unsigned char *data, uint16_t wLength)
 {
 	uint8_t bmRequestType = 0x80 | LIBUSB_REQUEST_TYPE_CLASS |
 		LIBUSB_RECIPIENT_INTERFACE;
 	uint8_t bRequest = GET_CUR;
 	uint16_t wValue = selector << 8;
-	uint16_t wIndex = entity << 8 | interface;
+	uint16_t wIndex = entity << 8 | CONTROL_IFACE;
 	unsigned int timeout = TIMEOUT;
 	int ret;
 
 	ret = libusb_control_transfer(dev, bmRequestType, bRequest, wValue,
 			wIndex, data, wLength, timeout);
 	if (ret < 0) {
-		fprintf(stderr, "failed to transfer GET CUR %u %u %u: %d %d %m\n",
-				interface, entity, selector, ret, errno);
+		fprintf(stderr, "failed to transfer GET CUR %u %u: %d %d %m\n",
+			entity, selector, ret, errno);
 	}
 	return ret;
 }
@@ -115,19 +115,8 @@ void cb(uvc_frame_t *frame, void *ptr)
 	}
 
 	SDL_UnlockSurface(data->target);
-
-#if 0
-	int ret;
-	uint16_t val;
-	libusb_device_handle *devh = data->usb_devh;
-	esp770u_read_reg2(devh, 0xb2, &val);
-	printf("b2: %04x\n", val);
-#endif
-
 	SDL_UnlockMutex(data->mutex);
 }
-
-#define CONTROL_IFACE   0
 
 #define XU_ENTITY       4
 
@@ -137,13 +126,11 @@ int esp770u_read_reg(libusb_device_handle *dev, uint8_t reg, uint8_t *val)
 {
 	unsigned char buf[4] = { 0x82, 0xf0, reg };
 	int ret;
-	uint8_t interface = CONTROL_IFACE;
-	uint8_t entity = XU_ENTITY;
 
-	ret = uvc_set_cur(dev, interface, entity, REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, interface, entity, REG_SEL, buf, 3);
+	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, 3);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x82 || buf[2] != 0x00)
@@ -157,13 +144,11 @@ int esp770u_read_reg_f1(libusb_device_handle *dev, uint8_t reg, uint8_t *val)
 {
 	unsigned char buf[4] = { 0x82, 0xf1, reg };
 	int ret;
-	uint8_t interface = CONTROL_IFACE;
-	uint8_t entity = XU_ENTITY;
 
-	ret = uvc_set_cur(dev, interface, entity, REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, interface, entity, REG_SEL, buf, 3);
+	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, 3);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x82 || buf[2] != 0x00)
@@ -177,13 +162,11 @@ int esp770u_write_reg(libusb_device_handle *dev, uint8_t reg, uint8_t val)
 {
 	unsigned char buf[4] = { 0x02, 0xf0, reg, val };
 	int ret;
-	uint8_t interface = CONTROL_IFACE;
-	uint8_t entity = XU_ENTITY;
 
-	ret = uvc_set_cur(dev, interface, entity, REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, interface, entity, REG_SEL, buf, sizeof buf);
+	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x02 || buf[1] != 0xf0 || buf[2] != reg || buf[3] != val)
@@ -192,45 +175,43 @@ int esp770u_write_reg(libusb_device_handle *dev, uint8_t reg, uint8_t val)
 	return ret;
 }
 
-#define REG_SEL2 2
+#define SENSOR_REG_SEL 2
 
-int esp770u_read_reg2(libusb_device_handle *dev, uint8_t reg, uint16_t *val)
+int ar0134_read_reg(libusb_device_handle *dev, uint16_t reg, uint16_t *val)
 {
-	unsigned char buf[6] = { 0x86, 0x20, 0x30, reg, 0x00, 0x00 };
+	unsigned char buf[6] = { 0x86, 0x20, reg >> 8, reg & 0xff, 0x00, 0x00 };
 	int ret;
-	uint8_t interface = CONTROL_IFACE;
-	uint8_t entity = XU_ENTITY;
 
-	ret = uvc_set_cur(dev, interface, entity, REG_SEL2, buf, sizeof buf);
+	ret = uvc_set_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, interface, entity, REG_SEL2, buf, 3);
+	ret = uvc_get_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, 3);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x86)
-		fprintf(stderr, "read_reg(0x%x): %02x %02x %02x\n",
+		fprintf(stderr, "%s(0x%x): %02x %02x %02x\n", __func__,
 			reg, buf[0], buf[1], buf[2]);
 	*val = (buf[2] << 8) | buf[1];
 	return ret;
 }
 
-int esp770u_write_reg2(libusb_device_handle *dev, uint8_t reg, uint8_t val1, uint8_t val2)
+int ar0134_write_reg(libusb_device_handle *dev, uint16_t reg, uint16_t val)
 {
-	unsigned char buf[64] = { 0x06, 0x20, 0x30, reg, val1, val2 };
+	unsigned char buf[64] = { 0x06, 0x20, reg >> 8, reg & 0xff, val >> 8, val & 0xff };
 	int ret;
-	uint8_t interface = CONTROL_IFACE;
-	uint8_t entity = XU_ENTITY;
 
-	ret = uvc_set_cur(dev, interface, entity, REG_SEL2, buf, 6);
+	ret = uvc_set_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, 6);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, interface, entity, REG_SEL2, buf, sizeof buf);
+	ret = uvc_get_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	if (buf[0] != 0x06 || buf[1] != 0x20 || buf[2] != 0x30 || buf[3] != reg ||
-	    buf[4] != val1 || buf[5] != val2)
-		fprintf(stderr, "write_reg(0x%x,0x%x,0x%x): %02x %02x %02x %02x\n",
-			reg, val1, val2, buf[0], buf[1], buf[2], buf[3]);
+	if (buf[0] != 0x06 || buf[1] != 0x20 ||
+	    buf[2] != (reg >> 8) || buf[3] != (reg & 0xff) ||
+	    buf[4] != (val >> 8) || buf[5] != (val & 0xff))
+		fprintf(stderr, "%s(0x%04x, 0x%04x): %02x %02x %02x %02x %02x %02x\n",
+			__func__, reg, val, buf[0], buf[1], buf[2], buf[3],
+			buf[4], buf[5]);
 	return ret;
 }
 
@@ -240,16 +221,16 @@ static int set_get_verify_a0(libusb_device_handle *dev, uint8_t val,
 	uint8_t buf[4] = { 0xa0, val, 0x00, 0x00 };
 	int ret;
 
-	ret = uvc_set_cur(dev, 0, 4, 3, buf, sizeof buf);
+	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
 	memset(buf, 0, sizeof buf);
-	ret = uvc_get_cur(dev, 0, 4, 3, buf, sizeof buf);
+	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0xa0 || buf[1] != retval || buf[2] != 0x00) {
-		printf("response, should be a0 %02x 00: %02x %02x %02x\n",
-				retval, buf[0], buf[1], buf[2]);
+		fprintf(stderr, "response, should be a0 %02x 00: %02x %02x %02x\n",
+			retval, buf[0], buf[1], buf[2]);
 		return -1;
 	}
 
@@ -261,18 +242,16 @@ static int set_get_verify_a0(libusb_device_handle *dev, uint8_t val,
 
 static int setup_control(libusb_device_handle *devhandle, uint8_t a, size_t len)
 {
-	const uint8_t interface = CONTROL_IFACE;
-	const uint8_t entity = XU_ENTITY;
 	unsigned char control[16];
 	int ret;
 
 	/* prepare */
 	memset(control, 0, sizeof control);
-	control[1] = a; /* 0x81 or 0x41 */
+	control[1] = a; /* alternating, 0x81 or 0x41 */
 	control[2] = 0x80;
 	control[3] = 0x01;
 	control[9] = len;
-	ret = uvc_set_cur(devhandle, interface, entity, CONTROL_SEL, control,
+	ret = uvc_set_cur(devhandle, XU_ENTITY, CONTROL_SEL, control,
 			  sizeof control);
 	if (ret < 0)
 		return ret;
@@ -282,8 +261,6 @@ static int setup_control(libusb_device_handle *devhandle, uint8_t a, size_t len)
 
 static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size_t len)
 {
-	const uint8_t interface = CONTROL_IFACE;
-	const uint8_t entity = XU_ENTITY;
 	unsigned char data[127];
 	int ret;
 	int i;
@@ -301,7 +278,7 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 	if (ret < 0) return ret;
 
 	/* send data */
-	ret = uvc_set_cur(devhandle, interface, entity, DATA_SEL, data,
+	ret = uvc_set_cur(devhandle, XU_ENTITY, DATA_SEL, data,
 			  sizeof data);
 	if (ret < 0)
 		return ret;
@@ -312,7 +289,7 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 	if (ret < 0) return ret;
 
 	/* expect all zeros */
-	ret = uvc_get_cur(devhandle, interface, entity, DATA_SEL, data,
+	ret = uvc_get_cur(devhandle, XU_ENTITY, DATA_SEL, data,
 			  sizeof data);
 	if (ret < 0)
 		return ret;
@@ -333,10 +310,9 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 	ret = setup_control(devhandle, 0x81, sizeof data);
 	if (ret < 0) return ret;
 
-        /* clear */
+	/* clear */
 	memset(data, 0, sizeof data);
-	ret = uvc_set_cur(devhandle, interface, entity, DATA_SEL, data,
-			  sizeof data);
+	ret = uvc_set_cur(devhandle, XU_ENTITY, DATA_SEL, data, sizeof data);
 	if (ret < 0)
 		return ret;
 
@@ -345,8 +321,7 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 	ret = setup_control(devhandle, 0x41, sizeof data);
 	if (ret < 0) return ret;
 
-	ret = uvc_get_cur(devhandle, interface, entity, DATA_SEL, data,
-			  sizeof data);
+	ret = uvc_get_cur(devhandle, XU_ENTITY, DATA_SEL, data, sizeof data);
 	if (ret < 0)
 		return ret;
 	for (i = 2; i < 126; i++)
@@ -462,17 +437,17 @@ int esp770u_init_regs(libusb_device_handle *devhandle)
 }
 
 /* Sensor setup after stream start */
-int esp770u_init_regs2(libusb_device_handle *devh, cb_data *data)
+int ar0134_init(libusb_device_handle *devh, cb_data *data)
 {
 	uint16_t val;
 	int ret;
 
-#if 1
+#if 0
 	SDL_LockMutex(data->mutex);
-	for (int i = 0; i < 256; i += 2) {
+	for (int i = 0x3000; i < 0x3100; i += 2) {
 		if (i % 16 == 0)
-			printf("%02x: ", i);
-		ret = esp770u_read_reg2(devh, i, &val);
+			printf("%04x: ", i);
+		ret = ar0134_read_reg(devh, i, &val);
 		if (ret < 0) return ret;
 		printf("%04x ", val);
 		if (i % 16 == 14)
@@ -481,105 +456,139 @@ int esp770u_init_regs2(libusb_device_handle *devh, cb_data *data)
 	SDL_UnlockMutex(data->mutex);
 #endif
 
-	ret = esp770u_read_reg2(devh, 0x00, &val);
+	/* Read chip version and revision number registers */
+	ret = ar0134_read_reg(devh, 0x3000, &val);
 	if (ret < 0) return ret;
-	if (val != 0x2406) printf("00 != 2406: %04x\n", val);
+	ASSERT_MSG(val == 0x2406, "This is not an AR0134 sensor: 0x%04x\n", val);
 
-	ret = esp770u_read_reg2(devh, 0x00, &val);
+	ret = ar0134_read_reg(devh, 0x300e, &val);
 	if (ret < 0) return ret;
-	if (val != 0x2406) printf("00 != 2406\n");
+	ASSERT_MSG(val == 0x1300, "Unexpected revision number: 0x%04x\n", val);
 
-	ret = esp770u_read_reg2(devh, 0x00, &val);
+	ret = ar0134_read_reg(devh, 0x30b0, &val);
 	if (ret < 0) return ret;
-	if (val != 0x2406) printf("00 != 2406\n");
+	if (val != 0x0080)
+		fprintf(stderr, "Expected monochrome mode instead of 0x%04x\n", val);
 
-	ret = esp770u_read_reg2(devh, 0x0e, &val);
-	if (ret < 0) return ret;
-	if (val != 0x1300) printf("0e != 1300\n");
-
-	ret = esp770u_read_reg2(devh, 0xb0, &val);
-	if (ret < 0) return ret;
-	if (val != 0x0080) printf("b0 != 0080\n");
-
-	ret = esp770u_read_reg2(devh, 0x64, &val);
-	if (ret < 0) return ret;
-	if (val != 0x1882) printf("64 != 1882\n");
-
-	ret = esp770u_write_reg2(devh, 0x64, 0x19, 0x82);
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x1e, 0x00, 0x00); // darkens the picture
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x32, 0x00, 0x00);
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x5e, 0x00, 0x20); // 00 07 - darkens the picture
-	if (ret < 0) return ret;
-
-	ret = esp770u_read_reg2(devh, 0xb0, &val);
-	if (ret < 0) return ret;
-	if (val != 0x0080) printf("b0 != 0080\n");
-
-	ret = esp770u_write_reg2(devh, 0xb0, 0x00, 0x80);
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x02, 0x00, 0x00);
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x06, 0x03, 0xbf); // 959
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x04, 0x00, 0x00);
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x08, 0x04, 0xff); // 1279
-	if (ret < 0) return ret;
 #if 0
-	ret = esp770u_write_reg2(devh, 0x0c, 0x05, 0x6c); // 1388: causes hsync loss (buffer overflows?)
+	/* Enable embedded register data and statistics. For now we can't use
+	 * this anyway. */
+	ret = ar0134_read_reg(devh, 0x3064, &val);
+	if (ret < 0) return ret;
+	if (val != 0x1882 && val != 0x1982)
+		printf("Unexpected embedded data control: %04x\n", val);
+	ret = ar0134_write_reg(devh, 0x3064, val | 0x0180);
 	if (ret < 0) return ret;
 #endif
 
-	ret = esp770u_read_reg2(devh, 0xb0, &val);
-	if (ret < 0) return ret;
-	if (val != 0x0080) printf("b0 != 0080\n");
-
-	ret = esp770u_write_reg2(devh, 0xb0, 0x04, 0x80); // 1152
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x0a, 0x03, 0xe5); // 997: darkens the picture
+	/* Set data pedestal (black level) to zero */
+	ret = ar0134_write_reg(devh, 0x301e, 0);
 	if (ret < 0) return ret;
 
-	ret = esp770u_read_reg2(devh, 0x0c, &val);
-	if (ret < 0) return ret;
-	if (val != 0x056c) printf("b0 != 056c\n");
-
-	ret = esp770u_write_reg2(devh, 0x12, 0x00, 0x1a);
-	if (ret < 0) return ret;
-	ret = esp770u_write_reg2(devh, 0x14, 0x02, 0x86);
+	/* Disable binning */
+	ret = ar0134_write_reg(devh, 0x3032, 0x0000);
 	if (ret < 0) return ret;
 
-	ret = esp770u_read_reg2(devh, 0x12, &val);
-	if (ret < 0) return ret;
-	if (val != 0x001a) printf("b0 != 001a\n");
-	ret = esp770u_read_reg2(devh, 0x14, &val);
-	if (ret < 0) return ret;
-	if (val != 0x0286) printf("b0 != 0286\n");
-	ret = esp770u_read_reg2(devh, 0x1a, &val);
-	if (ret < 0) return ret;
-	if (val != 0x10dc) printf("b0 != 10dc\n");
-	/* 1a: 10 dc -> 19 d8 - start external exposure control via nRF51288 */
-	ret = esp770u_write_reg2(devh, 0x1a, 0x19, 0xd8);
+	/* Set all gain values to the default, in USB2 mode 0x0007 is used
+ 	 * instead. */
+	ret = ar0134_write_reg(devh, 0x305e, 0x0020);
 	if (ret < 0) return ret;
 
-	/* Enable the b2 readback */
-	ret = esp770u_read_reg2(devh, 0xb4, &val);
+	/* This changes nothing, probably clear some already cleared bits. */
+	ret = ar0134_read_reg(devh, 0x30b0, &val);
 	if (ret < 0) return ret;
-	if (val != 0x0000) printf("b4 != 0000\n");
-	ret = esp770u_write_reg2(devh, 0xb4, 0x00, 0x11);
+	val = 0x0080; /* val &= ~(?); */
+	ret = ar0134_write_reg(devh, 0x30b0, val);
 	if (ret < 0) return ret;
 
-	ret = esp770u_read_reg2(devh, 0xc6, &val);
+	/* Set vertical and horizontal capture ranges to maximum (0-959,
+	 * 0-1279). */
+	ret = ar0134_write_reg(devh, 0x3002, 0);
 	if (ret < 0) return ret;
-	if (val != 0x01d0 && val != 0x01d && val != 0x1ce)
-		printf("b0 != 01d0/01d2: %04x\n", val);
+	ret = ar0134_write_reg(devh, 0x3006, 959);
+	if (ret < 0) return ret;
+	ret = ar0134_write_reg(devh, 0x3004, 0);
+	if (ret < 0) return ret;
+	ret = ar0134_write_reg(devh, 0x3008, 1279);
+	if (ret < 0) return ret;
 
-	ret = esp770u_read_reg2(devh, 0xc8, &val);
+#if 0
+	/* Set minimum supported pixel clocks per line, causes hsync loss. */
+	ret = ar0134_write_reg(devh, 0x300c, 1388);
 	if (ret < 0) return ret;
-	if (val != 0x01ba && val != 0x01bc && val != 0x01bb)
-		printf("b0 != 01ba/01bc: %04x\n", val);
+#endif
+
+	/* Set a short line bit, needed for the 1388 pclk line length above. */
+	ret = ar0134_read_reg(devh, 0x30b0, &val);
+	if (ret < 0) return ret;
+	val |= (1 << 10);
+	ret = ar0134_write_reg(devh, 0x30b0, val);
+	if (ret < 0) return ret;
+
+	/* Set total number of lines, 37 lines vertical blanking */
+	ret = ar0134_write_reg(devh, 0x300a, 997);
+	if (ret < 0) return ret;
+
+	/* Read number of pixel clocks per line, should be changed above. */
+	ret = ar0134_read_reg(devh, 0x300c, &val);
+	if (ret < 0) return ret;
+	if (val != 1388)
+		fprintf(stderr, "Too many pixel clocks per line: %u\n", val);
+
+	/* Set coarse integration time (in multiples of lines) and
+	 * fine integration time (in multiples of the pixel clock). */
+	ret = ar0134_write_reg(devh, 0x3012, 26); /* 26 lines */
+	if (ret < 0) return ret;
+	ret = ar0134_write_reg(devh, 0x3014, 646);
+	if (ret < 0) return ret;
+	ret = ar0134_read_reg(devh, 0x3012, &val);
+	if (ret < 0) return ret;
+	if (val != 26)
+		fprintf(stderr, "Failed to set coarse integration time: %u\n", val);
+	ret = ar0134_read_reg(devh, 0x3014, &val);
+	if (ret < 0) return ret;
+	if (val != 646)
+		fprintf(stderr, "Failed to set fine integration time: %u\n", val);
+
+	/* Stop streaming, trigger external exposure from nRF51288 */
+	ret = ar0134_read_reg(devh, 0x301a, &val);
+	if (ret < 0) return ret;
+	if (val != 0x10dc)
+		fprintf(stderr, "Unexpected reset register value: 0x%04x\n", val);
+	/* Force PLL always enabled */
+	val |= 1 << 11;
+	/* Enable trigger input pin */
+	val |= 1 << 8;
+	/* Disable streaming (switch to externally triggered mode) */
+	val &= ~(1 << 2);
+	ret = ar0134_write_reg(devh, 0x301a, val);
+	if (ret < 0) return ret;
+
+	/* Enable junction temperature sensor */
+	ret = ar0134_read_reg(devh, 0x30b4, &val);
+	if (ret < 0) return ret;
+	/* Temperature sensor power */
+	val |= 1 << 0;
+	/* Start conversion */
+	val |= 1 << 4;
+	ret = ar0134_write_reg(devh, 0x30b4, val);
+	if (ret < 0) return ret;
+
+	/* Read 70 °C calibration point */
+	uint16_t calib_70c;
+	ret = ar0134_read_reg(devh, 0x30c6, &calib_70c);
+	if (ret < 0) return ret;
+
+	/* Read 50 °C calibration point */
+	uint16_t calib_50c;
+	ret = ar0134_read_reg(devh, 0x30c8, &calib_50c);
+	if (ret < 0) return ret;
+
+	/* Read temperature sensor */
+	ret = ar0134_read_reg(devh, 0x30b2, &val);
+	if (ret < 0) return ret;
+	printf("Temperature: %.1f °C\n", 50.0 + 20.0 * (val - calib_50c) /
+	       (calib_70c - calib_50c));
 }
 
 int main(int argc, char** argv)
@@ -646,7 +655,7 @@ int main(int argc, char** argv)
             }
             if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE)
             {
-                ret = esp770u_init_regs2(usb_devh, &data);
+                ret = ar0134_init(usb_devh, &data);
                 if (ret < 0)
                     return ret;
 
