@@ -2,7 +2,7 @@ name       playground
 template   c
 sourcedir  src
 cflags     std=c99 Wall g
-lib        sdl2
+lib        sdl2 libusb-1.0
 
 #libuvc
 ldflags    luvc    
