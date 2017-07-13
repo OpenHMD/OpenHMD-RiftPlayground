@@ -678,7 +678,7 @@ int main(int argc, char** argv)
             for (int index = 0; index < data.bwobs->num_blobs; index++)
             {
                 struct blob* blob = &data.bwobs->blobs[index];
-                SDL_Rect rect = {blob->x, blob->y, 20, 20};
+                SDL_Rect rect = {blob->x - 10, blob->y - 10, 20, 20};
                 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 128);
                 SDL_RenderDrawRect(renderer, &rect);
             }
