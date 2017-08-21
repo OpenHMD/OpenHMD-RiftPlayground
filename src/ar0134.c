@@ -13,10 +13,10 @@ int ar0134_read_reg(libusb_device_handle *dev, uint16_t reg, uint16_t *val)
 	unsigned char buf[6] = { 0x86, 0x20, reg >> 8, reg & 0xff, 0x00, 0x00 };
 	int ret;
 
-	ret = uvc_set_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, 0, XU_ENTITY, SENSOR_REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, 3);
+	ret = uvc_get_cur(dev, 0, XU_ENTITY, SENSOR_REG_SEL, buf, 3);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x86)
@@ -31,10 +31,10 @@ int ar0134_write_reg(libusb_device_handle *dev, uint16_t reg, uint16_t val)
 	unsigned char buf[64] = { 0x06, 0x20, reg >> 8, reg & 0xff, val >> 8, val & 0xff };
 	int ret;
 
-	ret = uvc_set_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, 6);
+	ret = uvc_set_cur(dev, 0, XU_ENTITY, SENSOR_REG_SEL, buf, 6);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, XU_ENTITY, SENSOR_REG_SEL, buf, sizeof buf);
+	ret = uvc_get_cur(dev, 0, XU_ENTITY, SENSOR_REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x06 || buf[1] != 0x20 ||
@@ -80,7 +80,6 @@ int ar0134_init(libusb_device_handle *devh)
 	if (val != 0x0080)
 		fprintf(stderr, "Expected monochrome mode instead of 0x%04x\n", val);
 
-#if 0
 	/* Enable embedded register data and statistics. For now we can't use
 	 * this anyway. */
 	ret = ar0134_read_reg(devh, 0x3064, &val);
@@ -89,7 +88,6 @@ int ar0134_init(libusb_device_handle *devh)
 		printf("Unexpected embedded data control: %04x\n", val);
 	ret = ar0134_write_reg(devh, 0x3064, val | 0x0180);
 	if (ret < 0) return ret;
-#endif
 
 	/* Set data pedestal (black level) to zero */
 	ret = ar0134_write_reg(devh, 0x301e, 0);
@@ -122,11 +120,9 @@ int ar0134_init(libusb_device_handle *devh)
 	ret = ar0134_write_reg(devh, 0x3008, 1279);
 	if (ret < 0) return ret;
 
-#if 0
-	/* Set minimum supported pixel clocks per line, causes hsync loss. */
+	/* Set minimum supported pixel clocks per line */
 	ret = ar0134_write_reg(devh, 0x300c, 1388);
 	if (ret < 0) return ret;
-#endif
 
 	/* Set a short line bit, needed for the 1388 pclk line length above. */
 	ret = ar0134_read_reg(devh, 0x30b0, &val);

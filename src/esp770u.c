@@ -17,10 +17,10 @@ int esp770u_read_reg(libusb_device_handle *dev, uint8_t reg, uint8_t *val)
 	unsigned char buf[4] = { 0x82, 0xf0, reg };
 	int ret;
 
-	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, 0, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, 3);
+	ret = uvc_get_cur(dev, 0, XU_ENTITY, REG_SEL, buf, 3);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x82 || buf[2] != 0x00)
@@ -35,10 +35,10 @@ int esp770u_read_reg_f1(libusb_device_handle *dev, uint8_t reg, uint8_t *val)
 	unsigned char buf[4] = { 0x82, 0xf1, reg };
 	int ret;
 
-	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, 0, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, 3);
+	ret = uvc_get_cur(dev, 0, XU_ENTITY, REG_SEL, buf, 3);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x82 || buf[2] != 0x00)
@@ -53,10 +53,10 @@ int esp770u_write_reg(libusb_device_handle *dev, uint8_t reg, uint8_t val)
 	unsigned char buf[4] = { 0x02, 0xf0, reg, val };
 	int ret;
 
-	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, 0, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
-	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
+	ret = uvc_get_cur(dev, 0, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0x02 || buf[1] != 0xf0 || buf[2] != reg || buf[3] != val)
@@ -71,11 +71,11 @@ static int set_get_verify_a0(libusb_device_handle *dev, uint8_t val,
 	uint8_t buf[4] = { 0xa0, val, 0x00, 0x00 };
 	int ret;
 
-	ret = uvc_set_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
+	ret = uvc_set_cur(dev, 0, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
 	memset(buf, 0, sizeof buf);
-	ret = uvc_get_cur(dev, XU_ENTITY, REG_SEL, buf, sizeof buf);
+	ret = uvc_get_cur(dev, 0, XU_ENTITY, REG_SEL, buf, sizeof buf);
 	if (ret < 0)
 		return ret;
 	if (buf[0] != 0xa0 || buf[1] != retval || buf[2] != 0x00) {
@@ -101,7 +101,7 @@ static int setup_control(libusb_device_handle *devhandle, uint8_t a, size_t len)
 	control[2] = 0x80;
 	control[3] = 0x01;
 	control[9] = len;
-	ret = uvc_set_cur(devhandle, XU_ENTITY, CONTROL_SEL, control,
+	ret = uvc_set_cur(devhandle, 0, XU_ENTITY, CONTROL_SEL, control,
 			  sizeof control);
 	if (ret < 0)
 		return ret;
@@ -130,7 +130,7 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 	if (ret < 0) return ret;
 
 	/* send data */
-	ret = uvc_set_cur(devhandle, XU_ENTITY, DATA_SEL, data,
+	ret = uvc_set_cur(devhandle, 0, XU_ENTITY, DATA_SEL, data,
 			  sizeof data);
 	if (ret < 0)
 		return ret;
@@ -141,7 +141,7 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 	if (ret < 0) return ret;
 
 	/* expect all zeros */
-	ret = uvc_get_cur(devhandle, XU_ENTITY, DATA_SEL, data,
+	ret = uvc_get_cur(devhandle, 0, XU_ENTITY, DATA_SEL, data,
 			  sizeof data);
 	if (ret < 0)
 		return ret;
@@ -164,7 +164,7 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 
 	/* clear */
 	memset(data, 0, sizeof data);
-	ret = uvc_set_cur(devhandle, XU_ENTITY, DATA_SEL, data, sizeof data);
+	ret = uvc_set_cur(devhandle, 0, XU_ENTITY, DATA_SEL, data, sizeof data);
 	if (ret < 0)
 		return ret;
 
@@ -173,7 +173,7 @@ static int radio_write(libusb_device_handle *devhandle, const uint8_t *buf, size
 	ret = setup_control(devhandle, 0x41, sizeof data);
 	if (ret < 0) return ret;
 
-	ret = uvc_get_cur(devhandle, XU_ENTITY, DATA_SEL, data, sizeof data);
+	ret = uvc_get_cur(devhandle, 0, XU_ENTITY, DATA_SEL, data, sizeof data);
 	if (ret < 0)
 		return ret;
 	for (i = 2; i < 126; i++)
