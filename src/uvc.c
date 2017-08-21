@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "esp570.h"
 #include "uvc.h"
 
 #define SET_CUR 0x01
@@ -251,6 +252,8 @@ int uvc_stream_start(libusb_context *ctx, libusb_device_handle *devh,
 		num_packets = 32;
 		packet_size = 3060;
 		alt_setting = 7;
+
+		esp570_setup_unknown_3(devh);
 		break;
 	case CV1_PID:
 		control.bFrameIndex = 4;

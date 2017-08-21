@@ -7,6 +7,7 @@
 #include "blobwatch.h"
 #include "ar0134.h"
 #include "esp770u.h"
+#include "mt9v034.h"
 #include "uvc.h"
 
 #define ASSERT_MSG(_v, ...) if(!(_v)){ fprintf(stderr, __VA_ARGS__); exit(1); }
@@ -82,6 +83,7 @@ int main(int argc, char** argv)
     libusb_device_handle *usb_devh;
     struct uvc_stream stream;
     int ret;
+    uint16_t pid;
 
     SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -90,9 +92,9 @@ int main(int argc, char** argv)
     ret = libusb_init(&ctx);
     ASSERT_MSG(ret >= 0, "could not initalize libusb\n");
 
-    usb_devh = libusb_open_device_with_vid_pid(ctx, 0x2833, CV1_PID);
+    usb_devh = libusb_open_device_with_vid_pid(ctx, 0x2833, pid = CV1_PID);
     if (!usb_devh)
-	usb_devh = libusb_open_device_with_vid_pid(ctx, 0x2833, DK2_PID);
+	usb_devh = libusb_open_device_with_vid_pid(ctx, 0x2833, pid = DK2_PID);
     ASSERT_MSG(usb_devh, "could not find or open the camera\n");
 
     stream.frame_cb = cb;
@@ -127,13 +129,23 @@ int main(int argc, char** argv)
             }
             if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE)
             {
-                ret = ar0134_init(usb_devh);
-                if (ret < 0)
-                    return ret;
+                if (pid == CV1_PID) {
+                    ret = ar0134_init(usb_devh);
+                    if (ret < 0)
+                        return ret;
 
-                ret = esp770u_setup_radio(usb_devh, RIFT_RADIO_ID);
-                if (ret < 0)
-                    return ret;
+                    ret = esp770u_setup_radio(usb_devh, RIFT_RADIO_ID);
+                    if (ret < 0)
+                        return ret;
+                } else if (pid == DK2_PID) {
+                    ret = mt9v034_setup(usb_devh);
+                    if (ret < 0)
+                        return ret;
+
+                    ret = mt9v034_set_sync(usb_devh, true);
+                    if (ret < 0)
+                        return ret;
+                }
             }
         }
 

@@ -3,9 +3,13 @@ main_sources = [
 	'ar0134.h',
 	'blobwatch.c',
 	'blobwatch.h',
+	'esp570.c',
+	'esp570.h',
 	'esp770u.c',
 	'esp770u.h',
 	'main.c',
+	'mt9v034.c',
+	'mt9v034.h',
 	'uvc.c',
 	'uvc.h'
 ]
