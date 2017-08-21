@@ -91,6 +91,8 @@ int main(int argc, char** argv)
     ASSERT_MSG(ret >= 0, "could not initalize libusb\n");
 
     usb_devh = libusb_open_device_with_vid_pid(ctx, 0x2833, CV1_PID);
+    if (!usb_devh)
+	usb_devh = libusb_open_device_with_vid_pid(ctx, 0x2833, DK2_PID);
     ASSERT_MSG(usb_devh, "could not find or open the camera\n");
 
     stream.frame_cb = cb;

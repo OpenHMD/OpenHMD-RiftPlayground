@@ -239,6 +239,19 @@ int uvc_stream_start(libusb_context *ctx, libusb_device_handle *devh,
 		return ret;
 
 	switch (desc.idProduct) {
+	case DK2_PID:
+		control.dwFrameInterval = __cpu_to_le32(166666);
+		control.dwMaxVideoFrameSize = __cpu_to_le32(752 * 480);
+		control.dwMaxPayloadTransferSize = __cpu_to_le16(3000);
+
+		stream->stride = 752;
+		stream->width = 752;
+		stream->height = 480;
+
+		num_packets = 32;
+		packet_size = 3060;
+		alt_setting = 7;
+		break;
 	case CV1_PID:
 		control.bFrameIndex = 4;
 		control.dwFrameInterval = __cpu_to_le32(192000);
