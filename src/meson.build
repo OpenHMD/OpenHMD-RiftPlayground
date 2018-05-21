@@ -7,6 +7,8 @@ main_sources = [
 	'esp570.h',
 	'esp770u.c',
 	'esp770u.h',
+	'flicker.c',
+	'flicker.h',
 	'main.c',
 	'mt9v034.c',
 	'mt9v034.h',

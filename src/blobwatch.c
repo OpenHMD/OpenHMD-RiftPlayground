@@ -10,8 +10,7 @@
 #include <unistd.h>
 
 #include "blobwatch.h"
-//#include "debug.h"
-//#include "flicker.h"
+#include "flicker.h"
 
 struct leds;
 
@@ -39,12 +38,12 @@ struct blobwatch {
 };
 
 /* temporary global */
-//bool rift_flicker;
+bool rift_flicker;
 
-//void blobwatch_set_flicker(bool enable)
-//{
-//	rift_flicker = enable;
-//}
+void blobwatch_set_flicker(bool enable)
+{
+	rift_flicker = enable;
+}
 
 /*
  * Allocates and initializes blobwatch structure.
@@ -246,8 +245,8 @@ static int find_free_track(uint8_t *tracked)
  * history.
  */
 void blobwatch_process(struct blobwatch *bw, uint8_t *frame,
-		       int width, int height, int skipped, struct leds *leds,
-		       struct blobservation **output)
+		       int width, int height, int skipped, int num_patterns,
+		       const uint16_t *patterns, struct blobservation **output)
 {
 	int last = bw->last_observation;
 	int current = (last + 1) % NUM_FRAMES_HISTORY;
@@ -341,11 +340,11 @@ void blobwatch_process(struct blobwatch *bw, uint8_t *frame,
 		}
 	}
 
-//	if (rift_flicker) {
-//		/* Identify blobs by their blinking pattern */
-//		flicker_process(bw->fl, ob->blobs, ob->num_blobs, skipped,
-//				leds);
-//	}
+	if (rift_flicker) {
+		/* Identify blobs by their blinking pattern */
+		flicker_process(ob->blobs, ob->num_blobs, skipped,
+				num_patterns, patterns);
+	}
 
 	/* Return observed blobs */
 	if (output)

@@ -15,12 +15,24 @@
 /* change this to the Rift HMD's radio id */
 #define RIFT_RADIO_ID 0x12345678
 
+#define NUM_PATTERNS_CV1 34
+#define NUM_PATTERNS_DK2 40
+
+static const uint16_t patterns[40] = {
+	0x001, 0x006, 0x01a, 0x01d, 0x028, 0x02f, 0x033, 0x04b, 0x04c, 0x057,
+	0x062, 0x065, 0x079, 0x07e, 0x090, 0x0a4, 0x114, 0x151, 0x183, 0x18c,
+	0x199, 0x1aa, 0x1b5, 0x1c0, 0x1cf, 0x1d6, 0x1e9, 0x1f3, 0x1fc, 0x230,
+	0x252, 0x282, 0x285, 0x29b, 0x29c, 0x2ae, 0x2b7, 0x2c8, 0x2d1, 0x2e3,
+};
+
 typedef struct
 {
 	SDL_Surface* target;
 	SDL_mutex* mutex;
 	struct blobservation* bwobs;
 	libusb_device_handle *usb_devh;
+	int num_patterns;
+	const uint16_t *patterns;
 } cb_data;
 
 struct blobwatch* bw;
@@ -55,7 +67,8 @@ void cb(struct uvc_stream *stream)
 		(*tpx++) = *(spx++);
 	}
 
-	blobwatch_process(bw, stream->frame, width, height, 0, NULL, &data->bwobs);
+	blobwatch_process(bw, stream->frame, width, height, 0,
+			  data->num_patterns, data->patterns, &data->bwobs);
 
 	if (data->bwobs)
 	{
@@ -113,7 +126,9 @@ int main(int argc, char** argv)
     SDL_Surface* target = SDL_CreateRGBSurface(
             SDL_SWSURFACE, stream.width, stream.height, 32, 0xff, 0xff00, 0xff0000, 0);
 
-    cb_data data = { target, mutex, NULL, usb_devh };
+    cb_data data = { target, mutex, NULL, usb_devh,
+            (pid == CV1_PID) ? NUM_PATTERNS_CV1 : NUM_PATTERNS_DK2, patterns };
+
     stream.user_data = &data;
 
     bool done = false;
@@ -147,6 +162,7 @@ int main(int argc, char** argv)
                     if (ret < 0)
                         return ret;
                 }
+                blobwatch_set_flicker(true);
             }
         }
 
@@ -164,7 +180,10 @@ int main(int argc, char** argv)
             {
                 struct blob* blob = &data.bwobs->blobs[index];
                 SDL_Rect rect = {blob->x - 10, blob->y - 10, 20, 20};
-                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 128);
+                if (blob->led_id != -1 && blob->age >= 10)
+                    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 128);
+                else
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 128);
                 SDL_RenderDrawRect(renderer, &rect);
             }
         }

@@ -9,8 +9,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct leds;
-
 #define MAX_EXTENTS_PER_LINE 11
 #define MAX_BLOBS_PER_FRAME  42
 
@@ -63,7 +61,7 @@ struct blobwatch;
 struct blobwatch *blobwatch_new(int width, int height);
 void blobwatch_process(struct blobwatch *bw, uint8_t *frame,
 		       int width, int height, int skipped,
-		       struct leds *leds,
+		       int num_patterns, const uint16_t *patterns,
 		       struct blobservation **output);
 void blobwatch_set_flicker(bool enable);
 
