@@ -97,6 +97,7 @@ int main(int argc, char** argv)
 	usb_devh = libusb_open_device_with_vid_pid(ctx, 0x2833, pid = DK2_PID);
     ASSERT_MSG(usb_devh, "could not find or open the camera\n");
 
+    memset(&stream, 0, sizeof(stream));
     stream.frame_cb = cb;
     ret = uvc_stream_start(ctx, usb_devh, &stream);
     ASSERT_MSG(ret >= 0, "could not start streaming\n");
